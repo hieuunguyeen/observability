@@ -1,0 +1,89 @@
+version: "3"
+
+volumes:
+  log-data:
+    driver: local
+  prometheus-data:
+  tempo-data:
+  loki-data:
+  grafana-storage:
+
+services:
+  demo-app:
+    build:
+      context: app
+    ports:
+      - "5000:5000"
+    volumes:
+      - log-data:/var
+    depends_on:
+      - fluent-bit
+      - otel-collector
+
+  fluent-bit:
+    image: fluent/fluent-bit:latest
+    volumes:
+      - ./fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+      - log-data:/var
+    ports:
+      - "3000:3000"
+
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    command: [--config=/etc/otel-collector-config.yaml]
+    volumes:
+      - ./otel-collector/otel-collector-config.yaml:/etc/otel-collector-config.yaml
+    ports:
+      - "13133:13133"
+    depends_on:
+      - fluent-bit
+
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/loki.yaml:/etc/loki/local-config.yaml
+      - loki-data:/loki
+    depends_on:
+      - otel-collector
+
+  tempo:
+    image: grafana/tempo:latest
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo.yaml
+      - ./tempo-data:/tmp/tempo
+    ports:
+      - "3200" # tempo
+      - "4317" # otlp grpc
+      - "4318" # otlp http
+    depends_on:
+      - otel-collector
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus
+      - prometheus-data:/prometheus
+    command:
+      - --web.enable-lifecycle
+      - --config.file=/etc/prometheus/prometheus.yml
+    restart: always
+    ports:
+      - "9090:9090"
+    depends_on:
+      - otel-collector
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    ports:
+      - "3000:8080"
+    depends_on:
+      - tempo
+      - prometheus
+      - loki
+    volumes:
+      - "./grafana/grafana.ini:/etc/grafana/grafana.ini"
+      - "grafana-storage:/var/lib/grafana"
