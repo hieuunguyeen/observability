@@ -1,0 +1,17 @@
+{
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/recommended",
+        "prettier",
+    ],
+    "parser": "@typescript-eslint/parser",
+    "plugins": ["@typescript-eslint"],
+    "env": {
+        "node": true,
+        "es2020": true,
+        "es6": true,
+    },
+    "parserOptions": {
+        "sourceType": "module",
+    },
+}
