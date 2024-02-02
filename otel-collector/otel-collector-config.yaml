@@ -1,26 +1,33 @@
 receivers:
-  otlp:
-    protocols:
-      grpc:
-      http:
-        endpoint: "0.0.0.0:3030"
+    otlp:
+        protocols:
+            grpc:
+            http:
+                endpoint: '0.0.0.0:3030'
 
 exporters:
-  otlp:
+    otlp: # jaeger on otlp interface
+        # disable tls
+        endpoint: 'jaeger:4317'
+        tls:
+            insecure: true
 
-  loki:
+    # logging: # Will print to stdout. Kindda noisy so turned off
 
-  prometheus:
-    endpoint: "0.0.0.0:8889"
+    loki:
+        endpoint: http://loki:3100/loki/api/v1/push
+
+    prometheus:
+        endpoint: '0.0.0.0:9090'
 
 service:
-  pipelines:
-    logs:
-      receivers: [otlp]
-      exporters: [loki]
-    traces:
-      receivers: [otlp]
-      exporters: [tempo]
-    metrics:
-      receivers: [otlp]
-      exporters: [prometheus]
+    pipelines:
+        logs:
+            receivers: [otlp]
+            exporters: [loki]
+        traces:
+            receivers: [otlp]
+            exporters: [otlp] # jaeger on otlp
+        metrics:
+            receivers: [otlp]
+            exporters: [prometheus]

@@ -4,4 +4,4 @@ logs
 node_modules/
 
 app/*.js
-app/build
+app/.build

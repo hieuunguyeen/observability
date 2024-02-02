@@ -1,1 +1,20 @@
 auth_enabled: false
+
+schema_config:
+    configs:
+        - from: 2018-04-15
+          store: boltdb-shipper
+          object_store: gcs
+          schema: v11
+          index:
+              prefix: loki_index_
+              period: 24h
+
+storage_config:
+    gcs:
+        bucket_name: demo
+
+    boltdb_shipper:
+        active_index_directory: /loki/index
+        shared_store: gcs
+        cache_location: /loki/boltdb-cache
