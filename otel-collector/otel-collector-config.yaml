@@ -2,23 +2,37 @@ receivers:
     otlp:
         protocols:
             grpc:
+                endpoint: 0.0.0.0:4317
             http:
-                endpoint: '0.0.0.0:3030'
+                endpoint: 0.0.0.0:4318 # protobuf on http
+
+processors:
+    resource:
+        attributes:
+            - action: insert
+              key: loki.resource.labels
+              value: service.name
+    attributes:
+        actions:
+            - action: insert
+              key: loki.attributes.labels
+              value: roll
 
 exporters:
-    otlp: # jaeger on otlp interface
-        # disable tls
-        endpoint: 'jaeger:4317'
+    otlp/jaeger:
+        endpoint: jaeger:4317 # gRPC exporter for jaeger on 4317
         tls:
             insecure: true
-
-    # logging: # Will print to stdout. Kindda noisy so turned off
 
     loki:
         endpoint: http://loki:3100/loki/api/v1/push
 
     prometheus:
-        endpoint: '0.0.0.0:9090'
+        # endpoint: 0.0.0.0:9090 # ???
+        endpoint: 0.0.0.0:9464
+
+    debug:
+        verbosity: detailed
 
 service:
     pipelines:
@@ -27,7 +41,7 @@ service:
             exporters: [loki]
         traces:
             receivers: [otlp]
-            exporters: [otlp] # jaeger on otlp
+            exporters: [otlp/jaeger]
         metrics:
             receivers: [otlp]
             exporters: [prometheus]

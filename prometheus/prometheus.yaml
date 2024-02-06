@@ -6,4 +6,4 @@ scrape_configs:
     - job_name: demo
       scrape_interval: 5s
       static_configs:
-          - targets: ['collector:13133']
+          - targets: ['0.0.0.0:13133']

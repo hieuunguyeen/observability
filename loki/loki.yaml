@@ -1,20 +1,39 @@
 auth_enabled: false
 
+common:
+    path_prefix: /etc/loki
+    storage:
+        filesystem:
+            chunks_directory: /etc/loki/chunks
+            rules_directory: /etc/loki/rules
+    replication_factor: 1
+    ring:
+        instance_addr: 0.0.0.0
+        kvstore:
+            store: inmemory
+
 schema_config:
     configs:
         - from: 2018-04-15
           store: boltdb-shipper
-          object_store: gcs
+          object_store: filesystem
           schema: v11
           index:
               prefix: loki_index_
               period: 24h
 
 storage_config:
-    gcs:
-        bucket_name: demo
-
+    filesystem:
+        directory: /etc/loki/
     boltdb_shipper:
-        active_index_directory: /loki/index
-        shared_store: gcs
-        cache_location: /loki/boltdb-cache
+        active_index_directory: /etc/loki/boltdb_shipper/active_index_directory
+        cache_location: /etc/loki/boltdb_shipper/cache
+
+compactor:
+    working_directory: /etc/loki/compactor
+
+ingester:
+    wal:
+        enabled: true
+        dir: /etc/loki/wal
+        flush_on_shutdown: true

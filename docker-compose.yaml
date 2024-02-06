@@ -16,26 +16,17 @@ services:
         volumes:
             - log-data:/var
         depends_on:
-            - fluent-bit
-            - otel-collector
+            - otelcollector
 
-    fluent-bit:
-        image: fluent/fluent-bit:latest
-        volumes:
-            - ./fluent-bit/fluent-bit.yaml:/fluent-bit/etc/fluent-bit.yaml
-            - log-data:/var
-        ports:
-            - '3000:3000'
-
-    otel-collector:
+    otelcollector:
         image: otel/opentelemetry-collector-contrib:latest
         command: [--config=/etc/otel-collector-config.yaml]
         volumes:
             - ./otel-collector/otel-collector-config.yaml:/etc/otel-collector-config.yaml
         ports:
-            - '13133:13133'
-        depends_on:
-            - fluent-bit
+            - '3030:3030'
+            - '8889:8889' # Prometheus exporter metrics
+            - '13133:13133' # health_check extension
 
     loki:
         image: grafana/loki:latest
@@ -43,20 +34,26 @@ services:
             - '3100:3100'
         volumes:
             - ./loki/loki.yaml:/etc/loki/local-config.yaml
-            - loki-data:/loki
+            - loki-data:/etc/loki
+        command:
+            - -config.file=/etc/loki/local-config.yaml
+            - -log.level=error
+            - useradd -u 10001 loki
+            - chown loki:loki /etc/loki/*
         depends_on:
-            - otel-collector
+            - otelcollector
 
     jaeger:
         image: jaegertracing/all-in-one:latest
         ports:
-            - '16686:16686'
-            - '14268'
-            - '14250'
+            - '4317:4317'
+            - '4318:4318'
+            - '9411:9411'
+            - '16686:16686' # Jaeger UI
         environment:
             - COLLECTOR_OTLP_ENABLED=true
         depends_on:
-            - otel-collector
+            - otelcollector
 
     prometheus:
         image: prom/prometheus:latest
@@ -66,11 +63,12 @@ services:
         command:
             - --web.enable-lifecycle
             - --config.file=/etc/prometheus.yaml
+            - --enable-feature=otlp-write-receiver
         restart: always
         ports:
             - '9090:9090'
         depends_on:
-            - otel-collector
+            - otelcollector
 
     grafana:
         image: grafana/grafana:latest
