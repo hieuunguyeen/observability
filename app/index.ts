@@ -38,6 +38,7 @@ function startServer() {
             timestamp: Date.now(),
             body: `Sending back: ${roll}`,
             attributes: {
+                path: '/roll',
                 roll,
             },
         });
@@ -50,9 +51,7 @@ function startServer() {
             severityNumber: SeverityNumber.INFO,
             timestamp: Date.now(),
             body: `Listening for requests on http://demoapp:${PORT}`,
-            attributes: {
-                listening: 'port',
-            },
+            attributes: {},
         });
     });
 }

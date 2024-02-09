@@ -9,7 +9,6 @@ import { logs as logsAPI } from '@opentelemetry/api-logs';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-proto';
-import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
 // import { WinstonInstrumentation } from '@opentelemetry/instrumentation-winston';
@@ -46,12 +45,6 @@ export function startOTLPInstrumentation() {
         traceExporter: new OTLPTraceExporter({
             url: 'http://otel:4318/v1/traces',
         }),
-        // metricReader: new PrometheusExporter({
-        //     host: 'http://prometheus',
-        //     port: 9464,
-        //     endpoint: '/metrics',
-        //     appendTimestamp: true,
-        // }),
         metricReader: new metrics.PeriodicExportingMetricReader({
             exporter: new OTLPMetricExporter({
                 url: 'http://otel:4318/v1/metrics',
