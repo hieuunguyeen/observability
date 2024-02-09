@@ -1,10 +1,15 @@
+######################
+# Notes
+# - Otel endpoint does not need to have protol defined in front https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp#client-configuration
+######################
+
 receivers:
     otlp:
         protocols:
             grpc:
-                endpoint: 0.0.0.0:4317
+                endpoint: otel:4317
             http:
-                endpoint: 0.0.0.0:4318 # protobuf on http
+                endpoint: otel:4318 # protobuf on http
 
 processors:
     resource:
@@ -20,16 +25,15 @@ processors:
 
 exporters:
     otlp/jaeger:
-        endpoint: jaeger:4317 # gRPC exporter for jaeger on 4317
+        endpoint: jaeger:4317 # Push traces to jaeger
         tls:
             insecure: true
 
     loki:
-        endpoint: http://loki:3100/loki/api/v1/push
+        endpoint: http://loki:3100/loki/api/v1/push # Push logs to Loki's receiver endpoint
 
     prometheus:
-        # endpoint: 0.0.0.0:9090 # ???
-        endpoint: 0.0.0.0:9464
+        endpoint: 0.0.0.0:8889 # Exports to otel container's port for prometheus to scrape / pull
 
     debug:
         verbosity: detailed
@@ -38,7 +42,7 @@ service:
     pipelines:
         logs:
             receivers: [otlp]
-            exporters: [loki]
+            exporters: [loki, debug]
         traces:
             receivers: [otlp]
             exporters: [otlp/jaeger]

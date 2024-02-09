@@ -7,8 +7,12 @@ volumes:
     loki-data:
     grafana-storage:
 
+networks:
+    observability:
+        driver: bridge
+
 services:
-    demo-app:
+    demoapp:
         build:
             context: app
         ports:
@@ -16,17 +20,25 @@ services:
         volumes:
             - log-data:/var
         depends_on:
-            - otelcollector
+            - otel
+        networks:
+            - observability
 
-    otelcollector:
+    otel:
         image: otel/opentelemetry-collector-contrib:latest
         command: [--config=/etc/otel-collector-config.yaml]
         volumes:
             - ./otel-collector/otel-collector-config.yaml:/etc/otel-collector-config.yaml
         ports:
-            - '3030:3030'
-            - '8889:8889' # Prometheus exporter metrics
             - '13133:13133' # health_check extension
+            - '8888:8888' # Prometheus metrics exposed by the collector
+            - '8889:8889' # Prometheus exporter metrics
+        networks:
+            - observability
+        depends_on:
+            - jaeger
+            - prometheus
+            - loki
 
     loki:
         image: grafana/loki:latest
@@ -40,20 +52,20 @@ services:
             - -log.level=error
             - useradd -u 10001 loki
             - chown loki:loki /etc/loki/*
-        depends_on:
-            - otelcollector
+        networks:
+            - observability
 
     jaeger:
         image: jaegertracing/all-in-one:latest
         ports:
-            - '4317:4317'
-            - '4318:4318'
+            - '4317:4317' # gRPC protocol
+            - '4318:4318' # HTTP protocol
             - '9411:9411'
             - '16686:16686' # Jaeger UI
         environment:
             - COLLECTOR_OTLP_ENABLED=true
-        depends_on:
-            - otelcollector
+        networks:
+            - observability
 
     prometheus:
         image: prom/prometheus:latest
@@ -66,9 +78,9 @@ services:
             - --enable-feature=otlp-write-receiver
         restart: always
         ports:
-            - '9090:9090'
-        depends_on:
-            - otelcollector
+            - '9090:9090' # UI
+        networks:
+            - observability
 
     grafana:
         image: grafana/grafana:latest
@@ -76,9 +88,9 @@ services:
         ports:
             - '8081:3000'
         depends_on:
-            - prometheus
-            - loki
-            - jaeger
+            - otel
         volumes:
             - './grafana/grafana.ini:/etc/grafana/grafana.ini'
             - 'grafana-storage:/var/lib/grafana'
+        networks:
+            - observability
