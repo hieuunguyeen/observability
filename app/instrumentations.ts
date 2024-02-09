@@ -11,12 +11,9 @@ import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-proto';
 
 import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
-// import { WinstonInstrumentation } from '@opentelemetry/instrumentation-winston';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
-
-// import winston from 'winston';
 
 // Setup trace and metric exporters via sdk. Logs needs to be done outside of SDK
 // because it is not yet supported
@@ -41,6 +38,8 @@ export function startOTLPInstrumentation() {
         ),
     );
 
+    logsAPI.setGlobalLoggerProvider(loggerProvider);
+
     const sdk = new NodeSDK({
         traceExporter: new OTLPTraceExporter({
             url: 'http://otel:4318/v1/traces',
@@ -56,11 +55,8 @@ export function startOTLPInstrumentation() {
         instrumentations: [
             new HttpInstrumentation(),
             new ExpressInstrumentation(),
-            // new WinstonInstrumentation(),
         ],
     });
-
-    logsAPI.setGlobalLoggerProvider(loggerProvider);
 
     sdk.start();
 
