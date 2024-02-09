@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "description": "Sample app that generate log for observing",
     "scripts": {
-        "start": "npx ts-node index.ts"
+        "start": "npx ts-node --require ./instrumentations.ts index.ts"
     },
     "main": "index.ts",
     "author": "James Nguyen",

@@ -10,14 +10,18 @@ import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-proto';
 
-import { ExpressInstrumentation } from '@opentelemetry/instrumentation-express';
+import {
+    ExpressInstrumentation,
+    ExpressLayerType,
+    ExpressRequestInfo,
+} from '@opentelemetry/instrumentation-express';
 import { HttpInstrumentation } from '@opentelemetry/instrumentation-http';
 
 import { SemanticResourceAttributes } from '@opentelemetry/semantic-conventions';
 
 // Setup trace and metric exporters via sdk. Logs needs to be done outside of SDK
 // because it is not yet supported
-export function startOTLPInstrumentation() {
+function startOTLPInstrumentation() {
     const loggerProvider = new logsSDK.LoggerProvider({
         resource: new resources.Resource({
             [SemanticResourceAttributes.SERVICE_NAME]: 'james',
@@ -41,6 +45,7 @@ export function startOTLPInstrumentation() {
     logsAPI.setGlobalLoggerProvider(loggerProvider);
 
     const sdk = new NodeSDK({
+        serviceName: 'demo-app',
         traceExporter: new OTLPTraceExporter({
             url: 'http://otel:4318/v1/traces',
         }),
@@ -54,7 +59,17 @@ export function startOTLPInstrumentation() {
         ),
         instrumentations: [
             new HttpInstrumentation(),
-            new ExpressInstrumentation(),
+            new ExpressInstrumentation({
+                requestHook: (span, info: ExpressRequestInfo) => {
+                    if (info.layerType === ExpressLayerType.REQUEST_HANDLER) {
+                        span.setAttributes({
+                            'http.route': info.route,
+                            'http.method': info.request.method,
+                            'express.base_url': info.request.baseUrl,
+                        });
+                    }
+                },
+            }),
         ],
     });
 
@@ -75,3 +90,10 @@ export function startOTLPInstrumentation() {
 export function getLogger(name: string = 'default') {
     return logsAPI.getLogger(name);
 }
+
+/**
+ * Instrumentations need to be done before it is require / imported into the instrumented module
+ *
+ * https://github.com/open-telemetry/opentelemetry-js/tree/main/experimental/packages/opentelemetry-instrumentation#instrumentation-for-es-modules-in-nodejs-experimental
+ */
+startOTLPInstrumentation();

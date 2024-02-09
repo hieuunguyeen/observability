@@ -1,5 +1,5 @@
 import express, { Express } from 'express';
-import { getLogger, startOTLPInstrumentation } from './instrumentations';
+import { getLogger } from './instrumentations';
 import { SeverityNumber } from '@opentelemetry/api-logs';
 
 import prometheusMetricBundle from 'express-prom-bundle';
@@ -8,17 +8,13 @@ const PORT: number = parseInt('8080');
 
 const APP = 'demo_app_log_instrumentation';
 
+const logger = getLogger(APP);
+
 function getRandomNumber(min: number, max: number) {
     return Math.floor(Math.random() * (max - min) + min);
 }
 
 function startServer() {
-    try {
-        startOTLPInstrumentation();
-    } catch (e) {
-        console.error(e);
-    }
-
     const app: Express = express();
 
     const metricsMiddleware = prometheusMetricBundle({
@@ -33,7 +29,7 @@ function startServer() {
     app.get('/roll', (req, res) => {
         const roll = getRandomNumber(1, 100).toString();
         // getLogger().info(`Sending back: ${roll}`);
-        getLogger(APP).emit({
+        logger.emit({
             severityNumber: SeverityNumber.INFO,
             timestamp: Date.now(),
             body: `Sending back: ${roll}`,
@@ -47,7 +43,7 @@ function startServer() {
 
     app.listen(PORT, () => {
         // getLogger().info(`Listening for requests on http://demoapp:${PORT}`);
-        getLogger(APP).emit({
+        logger.emit({
             severityNumber: SeverityNumber.INFO,
             timestamp: Date.now(),
             body: `Listening for requests on http://demoapp:${PORT}`,
