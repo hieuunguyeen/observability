@@ -1,0 +1,103 @@
+version: '3.8'
+
+volumes:
+  log-data:
+    driver: local
+  loki-storage:
+  grafana-storage:
+  nginx-storage:
+  tempo-storage:
+
+services:
+  # Loki & Tempo runs as user 10001, and docker compose creates the volume as root.
+  # As such, we need to chown the volume in order for Tempo to start correctly.
+  init-loki:
+    image: &lokiImage grafana/loki:3.1.0
+    user: root
+    entrypoint:
+      - 'chown'
+      - '10001:10001'
+      - '/etc/loki'
+    volumes:
+      - loki-storage:/etc/loki
+
+  init-tempo:
+    image: &tempoImage grafana/tempo:latest
+    user: root
+    entrypoint:
+      - 'chown'
+      - '10001:10001'
+      - '/etc/tempo'
+    volumes:
+      - tempo-storage:/etc/tempo
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    restart: unless-stopped
+    # ports:
+    #   - "3000:3000"
+    environment:
+      - GF_PATHS_CONFIG=/var/lib/grafana/grafana.ini
+      - GF_PATHS_PROVISIONING=/var/lib/grafana/provisioning
+      # - GF_DATABASE_URL="sqlite3:///var/lib/grafana/grafana.db?cache=private&mode=rwc&_journal_mode=WAL"
+    volumes:
+      - 'grafana-storage:/var/lib/grafana'
+      - './modules/grafana/grafana.ini:/var/lib/grafana/grafana.ini'
+      - './modules/grafana/grafana-datasources.yaml:/var/lib/grafana/provisioning/datasources/grafana-datasources.yaml'
+
+  loki:
+    image: *lokiImage
+    restart: unless-stopped
+    # ports:
+    #   - "3100:3100"
+    command:
+      - -config.file=/etc/loki/loki.yaml
+      - -config.expand-env=true
+    volumes:
+      - loki-storage:/etc/loki
+      - ./modules/loki/loki.yaml:/etc/loki/loki.yaml
+    depends_on:
+      - init-loki
+
+  tempo:
+    image: *tempoImage
+    restart: unless-stopped
+    # ports:
+    #   - "3200:3200"
+    #   - "4317:4317"
+    #   - "4318:4318"
+    command:
+      - -config.file=/etc/tempo/tempo.yaml
+    volumes:
+      - tempo-storage:/etc/tempo
+      - ./modules/tempo/tempo.yaml:/etc/tempo/tempo.yaml
+    depends_on:
+      - init-tempo
+
+  otel:
+    image: otel/opentelemetry-collector-contrib:0.105.0
+    restart: unless-stopped
+    command:
+      - --config=/etc/otel/config.yaml
+    environment:
+      - OTEL_BASIC_AUTH_USERNAME=otel
+      - OTEL_BASIC_AUTH_SECRET=otel
+    # ports:
+    # - "4318:4318"
+    volumes:
+      - ./modules/otel/config.yaml:/etc/otel/config.yaml
+    depends_on:
+      - loki
+      - tempo
+
+  nginx:
+    image: nginx:1.27.0-alpine
+    restart: unless-stopped
+    ports:
+      - 80:80
+    volumes:
+      - 'nginx-storage:/etc/nginx'
+      - './modules/nginx/nginx.conf:/etc/nginx/nginx.conf'
+    depends_on:
+      - grafana
+      - otel

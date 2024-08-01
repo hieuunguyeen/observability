@@ -1,0 +1,49 @@
+auth_enabled: false
+
+common:
+  path_prefix: /etc/loki
+  storage:
+    filesystem:
+      chunks_directory: /etc/loki/chunks
+      rules_directory: /etc/loki/rules
+  replication_factor: 1
+  ring:
+    instance_addr: loki
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: '2024-07-01'
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        period: 24h
+        prefix: index_
+      chunks:
+        period: 24h
+        prefix: chunk_
+      row_shards: 16
+
+storage_config:
+  filesystem:
+    directory: /etc/loki/
+  tsdb_shipper:
+    active_index_directory: /etc/loki/index
+    cache_location: /etc/loki/index_cache
+    cache_ttl: 24h
+
+server:
+  log_format: logfmt
+  log_level: warn
+  http_listen_port: 3100
+
+compactor:
+  working_directory: /etc/loki/compactor
+
+ingester:
+  wal:
+    enabled: true
+    dir: /etc/loki/wal
+    flush_on_shutdown: true

@@ -1,0 +1,40 @@
+extensions:
+  basicauth/server:
+    htpasswd:
+      inline: |
+        ${env:OTEL_BASIC_AUTH_USERNAME}:${env:OTEL_BASIC_AUTH_SECRET}
+
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: otel:4318
+        auth:
+          authenticator: basicauth/server
+
+processors:
+  batch:
+    timeout: 60s
+  probabilistic_sampler:
+    sampling_percentage: 15
+
+exporters:
+  otlphttp/tempo:
+    endpoint: http://tempo:4318
+    tls:
+      insecure: true
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+
+service:
+  extensions: [basicauth/server]
+  telemetry:
+    logs:
+      level: 'INFO'
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [otlphttp/loki]
+    traces:
+      receivers: [otlp]
+      exporters: [otlphttp/tempo]
