@@ -1,3 +1,5 @@
+# otel + jaeger + prometheus + loki + grafana
+
 version: '3'
 
 volumes:
