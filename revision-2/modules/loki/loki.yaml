@@ -36,7 +36,7 @@ storage_config:
 
 server:
   log_format: logfmt
-  log_level: warn
+  # log_level: warn
   http_listen_port: 3100
 
 compactor:

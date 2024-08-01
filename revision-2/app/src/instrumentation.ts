@@ -2,6 +2,8 @@ import { createBasicResourceLabels, getOtelSemantics, NodeInstrumentation } from
 
 let instrumentation: NodeInstrumentation | undefined;
 
+const TELEMETRY_FLUSH_INTERVAL = 5 * 1000;
+
 if (!instrumentation) {
   instrumentation = new NodeInstrumentation({
     logsUrl: process.env.OTEL_LOGS_URL as string,
@@ -17,15 +19,15 @@ if (!instrumentation) {
       ).toString('base64')}`,
     },
     logsBufferConfig: {
-      scheduledDelayMillis: 60 * 1000,
+      scheduledDelayMillis: TELEMETRY_FLUSH_INTERVAL,
     },
     tracesBufferConfig: {
-      scheduledDelayMillis: 60 * 1000,
+      scheduledDelayMillis: TELEMETRY_FLUSH_INTERVAL,
     },
     resourceLabels: {
       ...createBasicResourceLabels({
-        serviceNamespace: 'integration-layer',
-        serviceName: 'integration-layer-poller',
+        serviceNamespace: 'demo-app',
+        serviceName: 'demo-app-nodejs',
         cloudProvider: getOtelSemantics().CLOUDPROVIDERVALUES_AWS,
         cloudRegion: 'eu-west-1',
         deploymentEnvironment: process.env.STAGE as string,
@@ -36,6 +38,7 @@ if (!instrumentation) {
 }
 
 instrumentation.startInstrumentation({
+  traceExpress: true,
   traceHttpConfig: {
     ignoreOutgoingRequestHook: req => {
       if (req.path) {

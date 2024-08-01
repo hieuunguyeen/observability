@@ -6,3 +6,16 @@ prune: true
 #   - name: Acme # List the name of the datasource to delete
 
 datasources:
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    version: 1
+    editable: true
+    default: true
+  - name: Tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    version: 1
+    editable: true
