@@ -4,48 +4,48 @@
 ######################
 
 receivers:
-    otlp:
-        protocols:
-            grpc:
-                endpoint: otel:4317
-            http:
-                endpoint: otel:4318 # protobuf on http
+  otlp:
+    protocols:
+      grpc:
+        endpoint: otel:4317
+      http:
+        endpoint: otel:4318 # protobuf on http
 
 processors:
-    resource:
-        attributes:
-            - action: insert
-              key: loki.resource.labels
-              value: service.name
+  resource:
     attributes:
-        actions:
-            - action: insert
-              key: loki.attributes.labels
-              value: roll
+      - action: insert
+        key: loki.resource.labels
+        value: service.name
+  attributes:
+    actions:
+      - action: insert
+        key: loki.attributes.labels
+        value: roll
 
 exporters:
-    otlp/jaeger:
-        endpoint: jaeger:4317 # Push traces to jaeger
-        tls:
-            insecure: true
+  otlp/jaeger:
+    endpoint: jaeger:4317 # Push traces to jaeger
+    tls:
+      insecure: true
 
-    loki:
-        endpoint: http://loki:3100/loki/api/v1/push # Push logs to Loki's receiver endpoint
+  loki:
+    endpoint: http://loki:3100/loki/api/v1/push # Push logs to Loki's receiver endpoint
 
-    prometheus:
-        endpoint: 0.0.0.0:8889 # Exports to otel container's port for prometheus to scrape / pull
+  prometheus:
+    endpoint: 0.0.0.0:8889 # Exports to otel container's port for prometheus to scrape / pull
 
-    debug:
-        verbosity: detailed
+  debug:
+    verbosity: detailed
 
 service:
-    pipelines:
-        logs:
-            receivers: [otlp]
-            exporters: [loki, debug]
-        traces:
-            receivers: [otlp]
-            exporters: [otlp/jaeger]
-        metrics:
-            receivers: [otlp]
-            exporters: [prometheus]
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [loki, debug]
+    traces:
+      receivers: [otlp]
+      exporters: [otlp/jaeger]
+    metrics:
+      receivers: [otlp]
+      exporters: [prometheus]
