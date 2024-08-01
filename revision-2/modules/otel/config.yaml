@@ -2,7 +2,7 @@ extensions:
   basicauth/server:
     htpasswd:
       inline: |
-        ${env:OTEL_BASIC_AUTH_USERNAME}:${env:OTEL_BASIC_AUTH_SECRET}
+        ${env:OTEL_BASIC_AUTH_USERNAME}:${env:OTEL_BASIC_AUTH_PASSWORD}
 
 receivers:
   otlp:

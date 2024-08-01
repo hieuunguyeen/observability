@@ -81,7 +81,7 @@ services:
       - --config=/etc/otel/config.yaml
     environment:
       - OTEL_BASIC_AUTH_USERNAME=otel
-      - OTEL_BASIC_AUTH_SECRET=otel
+      - OTEL_BASIC_AUTH_PASSWORD=otel
     # ports:
     # - "4318:4318"
     volumes:
@@ -89,6 +89,21 @@ services:
     depends_on:
       - loki
       - tempo
+
+  app:
+    build:
+      context: app
+    environment:
+      - PORT=8080
+      - OTEL_LOGS_URL=http://0.0.0.0/otel/v1/logs
+      - OTEL_TRACE_URL=http://0.0.0.0/otel/v1/traces
+      - OTEL_BASIC_AUTH_USERNAME=otel
+      - OTEL_BASIC_AUTH_PASSWORD=otel
+      - STAGE=dev
+    # ports:
+    #   - '8080:8080'
+    depends_on:
+      - otel
 
   nginx:
     image: nginx:1.27.0-alpine
@@ -101,3 +116,4 @@ services:
     depends_on:
       - grafana
       - otel
+      - app

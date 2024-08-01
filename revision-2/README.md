@@ -22,7 +22,7 @@ Only endpoints to grafana and otel are exposed. loki and tempo can only be acces
 
 ## Grafana
 
-Deployed into root / path. Admin login credentials are in umob's 1Password under grafana
+Deployed into root / path
 
 ## Otel
 
